@@ -90,7 +90,10 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 set obj [get_filesets sources_1]
 set files [list \
  "[file normalize "$origin_dir/src/verilog/clocking.vh"]"\
- "[file normalize "$origin_dir/src/verilog/Top.CHISEL_CONFIG_HERE.v"]"\
+ "[file normalize "$origin_dir/src/verilog/Top.CHISEL_CONFIG_HERE.top.v"]"\
+ "[file normalize "$origin_dir/src/verilog/Top.CHISEL_CONFIG_HERE.top.mems.v"]"\
+ "[file normalize "$origin_dir/src/verilog/Top.CHISEL_CONFIG_HERE.harness.mems.v"]"\
+ "[file normalize "$origin_dir/src/verilog/Top.CHISEL_CONFIG_HERE.harness.v"]"\
  "[file normalize "$origin_dir/src/verilog/rocketchip_wrapper.v"]"\
  "[file normalize "$origin_dir/src/verilog/AsyncResetReg.v"]" \
  "[file normalize "$origin_dir/src/verilog/plusarg_reader.v"]" \

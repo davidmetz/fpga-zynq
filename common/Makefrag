@@ -14,6 +14,11 @@ common_build = $(common)/build
 testchipip = $(base_dir)/testchipip
 output_delivery = deliver_output
 SHELL := /bin/bash
+chipyard_dir = ~/git/chipyard
+vivado_dir = ~/Xilinx/Vivado/2018.2/bin
+long_name = $(TOP_MODULE_PROJECT).$(TOP_MODULE).$(CONFIG)
+gen_dir=$(chipyard_dir)/sims/verilator/generated-src
+build_dir=$(gen_dir)/$(long_name)
 
 bootrom_img = $(testchipip)/bootrom/bootrom.rv64.img $(testchipip)/bootrom/bootrom.rv32.img
 
@@ -26,9 +31,12 @@ proj_name = $(BOARD)_rocketchip_$(CONFIG)
 verilog_srcs = \
 	src/verilog/clocking.vh \
 	src/verilog/rocketchip_wrapper.v \
-	src/verilog/$(TOP_MODULE).$(CONFIG).v \
 	src/verilog/AsyncResetReg.v \
 	src/verilog/plusarg_reader.v \
+	src/verilog/$(TOP_MODULE).$(CONFIG).top.v \
+	src/verilog/$(TOP_MODULE).$(CONFIG).top.mems.v \
+	src/verilog/$(TOP_MODULE).$(CONFIG).harness.mems.v \
+	src/verilog/$(TOP_MODULE).$(CONFIG).harness.v \
 
 bootimage = fpga-images-$(BOARD)/boot.bin
 ifneq ($(BOARD),zc706_MIG)
@@ -45,14 +53,14 @@ $(addprefix src/verilog/,AsyncResetReg.v plusarg_reader.v): \
 # Taken from rocket chip 2a5aeea. TODO: Maybe source this directly from makefrag?
 SBT ?= java -Xmx2G -Xss8M -XX:MaxPermSize=256M -jar $(ROCKET_DIR)/sbt-launch.jar ++$(SCALA_VERSION)
 
-ROCKET_CLASSES ?= "$(ROCKET_DIR)/target/scala-$(SCALA_VERSION_MAJOR)/classes:$(ROCKET_DIR)/chisel3/target/scala-$(SCALA_VERSION_MAJOR)/*"
-FIRRTL_JAR ?= $(ROCKET_DIR)/firrtl/utils/bin/firrtl.jar
-FIRRTL ?= java -Xmx2G -Xss8M -XX:MaxPermSize=256M -cp $(ROCKET_CLASSES):$(FIRRTL_JAR) firrtl.Driver
-
-$(FIRRTL_JAR): $(shell find $(ROCKET_DIR)/firrtl/src/main/scala -iname "*.scala" 2> /dev/null)
-	$(MAKE) -C $(ROCKET_DIR)/firrtl SBT="$(SBT)" root_dir=$(ROCKET_DIR)/firrtl build-scala
-
-.PRECIOUS: $(FIRRTL_JAR)
+#ROCKET_CLASSES ?= "$(ROCKET_DIR)/target/scala-$(SCALA_VERSION_MAJOR)/classes:$(ROCKET_DIR)/chisel3/target/scala-$(SCALA_VERSION_MAJOR)/*"
+#FIRRTL_JAR ?= $(ROCKET_DIR)/firrtl/utils/bin/firrtl.jar
+#FIRRTL ?= java -Xmx2G -Xss8M -XX:MaxPermSize=256M -cp $(ROCKET_CLASSES):$(FIRRTL_JAR) firrtl.Driver
+#
+#$(FIRRTL_JAR): $(shell find $(ROCKET_DIR)/firrtl/src/main/scala -iname "*.scala" 2> /dev/null)
+#	$(MAKE) -C $(ROCKET_DIR)/firrtl SBT="$(SBT)" root_dir=$(ROCKET_DIR)/firrtl build-scala
+#
+#.PRECIOUS: $(FIRRTL_JAR)
 
 # Initialize rocket-chip submodule
 # ------------------------------------------------------------------------------
@@ -80,28 +88,48 @@ src/tcl/make_bitstream_$(CONFIG).tcl: $(common)/make_bitstream.tcl
 src/verilog/%.v: $(ROCKET_DIR)/vsrc/%.v
 	cp $< $@
 
-$(ROCKET_DIR)/lib/firrtl.jar: $(FIRRTL_JAR)
-	mkdir -p $(@D)
+#$(ROCKET_DIR)/lib/firrtl.jar: $(FIRRTL_JAR)
+#	mkdir -p $(@D)
+#	cp $< $@
+#
+#FIRRTL_FILE=$(common_build)/$(TOP_MODULE).$(CONFIG).fir
+#ANNO_FILE=$(common_build)/$(TOP_MODULE).$(CONFIG).anno
+#VERILOG_FILE=
+#$(common_build)/$(TOP_MODULE).$(CONFIG).v
+
+#PACKAGES=boom-template/rocket-chip boom-template/boom testchipip
+#SCALA_SOURCES=$(foreach pkg,$(PACKAGES),$(call lookup_scala_srcs,$(base_dir)/$(pkg)/src/main/scala)) $(call lookup_scala_srcs,$(base_dir)/src/main/scala)
+#
+#$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
+#	mkdir -p $(common_build)
+#	cd $(base_dir) && $(SBT) "runMain zynq.Generator $(common_build) \
+#	$(TOP_MODULE_PROJECT) $(TOP_MODULE) $(CFG_PROJECT) $(CONFIG)"
+#
+#.PRECIOUS: $(FIRRTL_FILE) $(ANNO_FILE)
+
+#$(VERILOG_FILE): $(FIRRTL_FILE) $(ANNO_FILE) $(FIRRTL_JAR) $(bootrom_img)
+#	$(FIRRTL) -i $(FIRRTL_FILE) -o $(VERILOG_FILE) -X verilog -faf $(ANNO_FILE)
+#
+TOP_FILE       ?= $(build_dir)/$(long_name).top.v
+TOP_SMEMS_FILE ?= $(build_dir)/$(long_name).top.mems.v
+
+HARNESS_FILE       ?= $(build_dir)/$(long_name).harness.v
+HARNESS_SMEMS_FILE ?= $(build_dir)/$(long_name).harness.mems.v
+
+$(TOP_FILE):
+	make -C $(chipyard_dir)/sims/verilator verilog SUB_PROJECT=zynq CONFIG=$(CONFIG)
+
+$(TOP_SMEMS_FILE): $(TOP_FILE)
+$(HARNESS_FILE): $(TOP_FILE)
+$(HARNESS_SMEMS_FILE): $(TOP_FILE)
+
+src/verilog/$(TOP_MODULE).$(CONFIG).top.v: $(TOP_FILE)
 	cp $< $@
-
-FIRRTL_FILE=$(common_build)/$(TOP_MODULE).$(CONFIG).fir
-ANNO_FILE=$(common_build)/$(TOP_MODULE).$(CONFIG).anno
-VERILOG_FILE=$(common_build)/$(TOP_MODULE).$(CONFIG).v
-
-PACKAGES=boom-template/rocket-chip boom-template/boom testchipip
-SCALA_SOURCES=$(foreach pkg,$(PACKAGES),$(call lookup_scala_srcs,$(base_dir)/$(pkg)/src/main/scala)) $(call lookup_scala_srcs,$(base_dir)/src/main/scala)
-
-$(FIRRTL_FILE) $(ANNO_FILE): $(SCALA_SOURCES) $(FIRRTL_JAR)
-	mkdir -p $(common_build)
-	cd $(base_dir) && $(SBT) "runMain zynq.Generator $(common_build) \
-	$(TOP_MODULE_PROJECT) $(TOP_MODULE) $(CFG_PROJECT) $(CONFIG)"
-
-.PRECIOUS: $(FIRRTL_FILE) $(ANNO_FILE)
-
-$(VERILOG_FILE): $(FIRRTL_FILE) $(ANNO_FILE) $(FIRRTL_JAR) $(bootrom_img)
-	$(FIRRTL) -i $(FIRRTL_FILE) -o $(VERILOG_FILE) -X verilog -faf $(ANNO_FILE)
-
-src/verilog/$(TOP_MODULE).$(CONFIG).v: $(VERILOG_FILE)
+src/verilog/$(TOP_MODULE).$(CONFIG).top.mems.v: $(TOP_SMEMS_FILE)
+	cp $< $@
+src/verilog/$(TOP_MODULE).$(CONFIG).harness.v: $(HARNESS_FILE)
+	cp $< $@
+src/verilog/$(TOP_MODULE).$(CONFIG).harness.mems.v: $(HARNESS_SMEMS_FILE)
 	cp $< $@
 
 rocket: src/verilog/$(TOP_MODULE).$(CONFIG).v
