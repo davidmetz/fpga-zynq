@@ -32,6 +32,7 @@ zc706/src/verilog/rocketchip_wrapper.v
 zc706/src/verilog/Top.*.v
 zc706/src/verilog/AsyncResetReg.v
 zc706/src/verilog/plusarg_reader.v
+zc706/src/verilog/EICG_wrapper.v
 zc706/deliver_output
 zc706/soft_build
 

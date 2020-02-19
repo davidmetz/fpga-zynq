@@ -19,3 +19,7 @@
 [submodule "sw/riscv-pk"]
 	path = sw/riscv-pk
 	url = https://github.com/riscv/riscv-pk.git
+[submodule "common/u-boot-xlnx"]
+	path = common/u-boot-xlnx
+	url = https://github.com/Xilinx/u-boot-xlnx.git
+	branch = master-next
