@@ -133,7 +133,7 @@ src/verilog/$(TOP_MODULE).$(CONFIG).harness.v: $(HARNESS_FILE)
 src/verilog/$(TOP_MODULE).$(CONFIG).harness.mems.v: $(HARNESS_SMEMS_FILE)
 	cp $< $@
 
-rocket: src/verilog/$(TOP_MODULE).$(CONFIG).v
+rocket: $(TOP_FILE)
 
 # Project generation
 # ------------------------------------------------------------------------------
@@ -170,7 +170,7 @@ boot-bin: $(bitstream)
 
 # Platform software generation
 # ------------------------------------------------------------------------------
-arm_linux_dir = $(base_dir)/common/linux-xlnx
+arm_linux_dir = $(base_dir)/zc706/common/linux-xlnx
 uboot_dir = $(base_dir)/common/u-boot-xlnx
 soft_build_dir = soft_build
 
@@ -178,10 +178,10 @@ arm-linux: arm-uboot # must first build uboot because we need tools
 	# compile kernel
 	git submodule update --init $(arm_linux_dir)
 	# no make clean included here since one copy of linux should work on all boards
-	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- xilinx_zynq_defconfig 
-	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- -j$(JOBS)
+	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- xilinx_zynq_defconfig
+	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j$(JOBS)
 	# convert zImage to uImage
-	cd $(arm_linux_dir) && export PATH=$(uboot_dir)/tools:$$PATH && make ARCH=arm CROSS_COMPILE=arm-xilinx-linux-gnueabi- UIMAGE_LOADADDR=0x8000 uImage
+	cd $(arm_linux_dir) && export PATH=$(uboot_dir)/tools:$$PATH && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- UIMAGE_LOADADDR=0x8000 uImage
 	mkdir -p $(output_delivery)
 	cp $(arm_linux_dir)/arch/arm/boot/uImage $(output_delivery)/
 
@@ -267,7 +267,7 @@ fesvr-hdrs = \
 
 fesvr-lib = $(common_build)/libfesvr.so
 
-CXX_FPGA      = arm-xilinx-linux-gnueabi-g++
+CXX_FPGA      = arm-linux-gnueabihf-g++
 CXXFLAGS_FPGA = -O2 -std=c++11 -Wall -L$(common_build) -lfesvr \
                 -Wl,-rpath,/usr/local/lib \
 		-I $(common)/csrc -I $(testchipip)/csrc \

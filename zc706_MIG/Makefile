@@ -6,7 +6,7 @@ PART = xc7z045ffg900-2
 
 #TOP_MODULE_PROJECT = zynq
 #CONFIG = ZynqFPGAConfig
-TOP_MODULE_PROJECT = zynq.boom
+TOP_MODULE_PROJECT = zynq
 CONFIG ?= SmallBoomZynqConfig
 #CONFIG ?= MediumBoomZynqConfig
 

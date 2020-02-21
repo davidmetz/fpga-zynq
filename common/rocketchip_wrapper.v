@@ -259,9 +259,9 @@ module rocketchip_wrapper
   wire [31:0] mem_araddr;
   wire [31:0] mem_awaddr;
 
-  // Memory given to Rocket is the upper 256 MB of the 512 MB DRAM
-  assign S_AXI_araddr = {4'd1, mem_araddr[27:0]};
-  assign S_AXI_awaddr = {4'd1, mem_awaddr[27:0]};
+  // Memory given to Rocket is the upper 768 MB of the 512 MB/1GB DRAM
+  assign S_AXI_araddr = {2'd0, mem_araddr[29:0] + {2'd1, 28'd0}};
+  assign S_AXI_awaddr = {2'd0, mem_awaddr[29:0] + {2'd1, 28'd0}};
 
   Top top(
    .clock(host_clk),
