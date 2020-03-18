@@ -696,7 +696,9 @@ set_property SLEW FAST [get_ports {DDR3_SODIMM_ck_n[0]}]
 set_property IOSTANDARD DIFF_SSTL15 [get_ports {DDR3_SODIMM_ck_n[0]}]
 set_property PACKAGE_PIN F10 [get_ports {DDR3_SODIMM_ck_n[0]}]
 
-
+# PWM fan
+set_property PACKAGE_PIN AB19     [get_ports { "SM_FAN_PWM" }]
+set_property IOSTANDARD  LVCMOS18 [get_ports { "SM_FAN_PWM" }]
 
 set_property LOC PHASER_OUT_PHY_X1Y19 [get_cells  -hier -filter {NAME =~ */ddr_phy_4lanes_2.u_ddr_phy_4lanes/ddr_byte_lane_D.ddr_byte_lane_D/phaser_out}]
 set_property LOC PHASER_OUT_PHY_X1Y18 [get_cells  -hier -filter {NAME =~ */ddr_phy_4lanes_2.u_ddr_phy_4lanes/ddr_byte_lane_C.ddr_byte_lane_C/phaser_out}]

@@ -38,6 +38,7 @@ module rocketchip_wrapper
     FIXED_IO_ps_clk,
     FIXED_IO_ps_porb,
     FIXED_IO_ps_srstb,
+    SM_FAN_PWM,
 `ifndef differential_clock
     clk);
 `else
@@ -83,6 +84,7 @@ module rocketchip_wrapper
   output DDR3_SODIMM_ras_n;
   output DDR3_SODIMM_reset_n;
   output DDR3_SODIMM_we_n;
+  output SM_FAN_PWM;
 
 `ifndef differential_clock
   input clk;
@@ -443,5 +445,23 @@ module rocketchip_wrapper
     .PWRDWN(1'b0),
     .RST(1'b0),
     .CLKFBIN(gclk_fbout));
+
+  reg fan_pwm_state;
+  reg [9:0] pwm_counter;
+  // host_clk = 50MHz => 50MHz/1024 = ~ 50KHz
+
+  assign SM_FAN_PWM = fan_pwm_state;
+
+  always @ (posedge host_clk, posedge reset) begin
+    if(reset) begin
+        fan_pwm_state <= 1'd0;
+        pwm_counter <= 10'd0;
+    end else begin
+        pwm_counter <= pwm_counter+10'd1;
+        if(!pwm_counter) begin
+            fan_pwm_state <= ~fan_pwm_state;
+        end
+    end
+  end
 
 endmodule
