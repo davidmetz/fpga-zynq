@@ -448,7 +448,7 @@ module rocketchip_wrapper
 
   reg fan_pwm_state;
   reg [9:0] pwm_counter;
-  // host_clk = 50MHz => 50MHz/1024 = ~ 50KHz
+  // host_clk = 50MHz => 50MHz/1024 = ~50KHz pwm frequency
 
   assign SM_FAN_PWM = fan_pwm_state;
 
@@ -458,8 +458,11 @@ module rocketchip_wrapper
         pwm_counter <= 10'd0;
     end else begin
         pwm_counter <= pwm_counter+10'd1;
-        if(!pwm_counter) begin
-            fan_pwm_state <= ~fan_pwm_state;
+        if(pwm_counter == 10'd0) begin
+            fan_pwm_state <= 1'd1;
+        // ~70% duty cycle
+        end else if(pwm_counter == 10'd700) begin
+            fan_pwm_state <= 1'd0;
         end
     end
   end

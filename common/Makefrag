@@ -14,8 +14,8 @@ common_build = $(common)/build
 testchipip = $(base_dir)/testchipip
 output_delivery = deliver_output
 SHELL := /bin/bash
-chipyard_dir = ~/git/chipyard
-vivado_dir = ~/Xilinx/Vivado/2018.2/bin
+chipyard_dir := ~/git/chipyard
+vivado_dir := ~/Xilinx/Vivado/2018.2/bin
 long_name = $(TOP_MODULE_PROJECT).$(TOP_MODULE).$(CONFIG)
 gen_dir=$(chipyard_dir)/sims/verilator/generated-src
 build_dir=$(gen_dir)/$(long_name)
@@ -66,10 +66,10 @@ SBT ?= java -Xmx2G -Xss8M -XX:MaxPermSize=256M -jar $(ROCKET_DIR)/sbt-launch.jar
 # Initialize rocket-chip submodule
 # ------------------------------------------------------------------------------
 
-init-submodules:
-	cd $(base_dir) && git submodule update --init boom-template testchipip
-	cd $(TEMPLATE_DIR) && git submodule update --init
-	cd $(ROCKET_DIR) && git submodule update --init
+#init-submodules:
+#	cd $(base_dir) && git submodule update --init boom-template testchipip
+#	cd $(TEMPLATE_DIR) && git submodule update --init
+#	cd $(ROCKET_DIR) && git submodule update --init
 
 # Specialize sources for board
 # ------------------------------------------------------------------------------
@@ -170,20 +170,20 @@ boot-bin: $(bitstream)
 
 # Platform software generation
 # ------------------------------------------------------------------------------
-arm_linux_dir = $(base_dir)/zc706/common/linux-xlnx
+#arm_linux_dir = $(base_dir)/zc706/common/linux-xlnx
 uboot_dir = $(base_dir)/common/u-boot-xlnx
 soft_build_dir = soft_build
 
-arm-linux: arm-uboot # must first build uboot because we need tools
-	# compile kernel
-	git submodule update --init $(arm_linux_dir)
-	# no make clean included here since one copy of linux should work on all boards
-	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- xilinx_zynq_defconfig
-	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j$(JOBS)
-	# convert zImage to uImage
-	cd $(arm_linux_dir) && export PATH=$(uboot_dir)/tools:$$PATH && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- UIMAGE_LOADADDR=0x8000 uImage
-	mkdir -p $(output_delivery)
-	cp $(arm_linux_dir)/arch/arm/boot/uImage $(output_delivery)/
+#arm-linux: arm-uboot # must first build uboot because we need tools
+#	# compile kernel
+#	git submodule update --init $(arm_linux_dir)
+#	# no make clean included here since one copy of linux should work on all boards
+#	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- xilinx_zynq_defconfig
+#	cd $(arm_linux_dir) && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j$(JOBS)
+#	# convert zImage to uImage
+#	cd $(arm_linux_dir) && export PATH=$(uboot_dir)/tools:$$PATH && make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- UIMAGE_LOADADDR=0x8000 uImage
+#	mkdir -p $(output_delivery)
+#	cp $(arm_linux_dir)/arch/arm/boot/uImage $(output_delivery)/
 
 arm-uboot:
 	# compile board-compatible u-boot
@@ -200,8 +200,8 @@ arm-uboot:
 	mkdir -p $(soft_build_dir)
 	cp $(uboot_dir)/u-boot $(soft_build_dir)/u-boot.elf
 
-arm-dtb:
-	export PATH=$(arm_linux_dir)/scripts/dtc:$$PATH && dtc -I dts -O dtb -o $(output_delivery)/devicetree.dtb soft_config/$(BOARD)_devicetree.dts
+#arm-dtb:
+#	export PATH=$(arm_linux_dir)/scripts/dtc:$$PATH && dtc -I dts -O dtb -o $(output_delivery)/devicetree.dtb soft_config/$(BOARD)_devicetree.dts
 
 
 
@@ -232,18 +232,18 @@ ramdisk-close:
 		exit 1; \
 	fi
 	sh -c 'cd ramdisk/ && sudo find . | sudo cpio -H newc -o' | gzip -9 > uramdisk.cpio.gz
-	mkimage -A arm -O linux -T ramdisk -d uramdisk.cpio.gz fpga-images-$(BOARD)/uramdisk.image.gz
+	$(uboot_dir)/tools/mkimage -A arm -O linux -T ramdisk -d uramdisk.cpio.gz fpga-images-$(BOARD)/uramdisk.image.gz
 	rm uramdisk.cpio.gz
 	@echo "Don't forget to remove ramdisk before opening it again (sudo rm -rf ramdisk)"
 
 
 # Fetch ramdisk for user building from scratch
 # ------------------------------------------------------------------------------
-s3_url = https://s3-us-west-1.amazonaws.com/riscv.org/fpga-zynq-files
-ramdisk_url = $(s3_url)/uramdisk.image.gz
-fetch-ramdisk:
-	mkdir -p $(output_delivery)
-	curl $(ramdisk_url) > $(output_delivery)/uramdisk.image.gz
+#s3_url = https://s3-us-west-1.amazonaws.com/riscv.org/fpga-zynq-files
+#ramdisk_url = $(s3_url)/uramdisk.image.gz
+#fetch-ramdisk:
+#	mkdir -p $(output_delivery)
+#	curl $(ramdisk_url) > $(output_delivery)/uramdisk.image.gz
 
 
 # Rebuild from bif for user building from scratch
@@ -266,19 +266,20 @@ fesvr-hdrs = \
 	$(testchipip)/csrc/blkdev.h \
 
 fesvr-lib = $(common_build)/libfesvr.so
+pk = $(common_build)/pk
 
 CXX_FPGA      = arm-linux-gnueabihf-g++
 CXXFLAGS_FPGA = -O2 -std=c++11 -Wall -L$(common_build) -lfesvr \
                 -Wl,-rpath,/usr/local/lib \
 		-I $(common)/csrc -I $(testchipip)/csrc \
-		-I $(ROCKET_DIR)/riscv-tools/riscv-fesvr/ \
+		-I $(common)/riscv-fesvr/ \
 		-Wl,-rpath,/usr/local/lib \
 
 $(fesvr-lib):
 	mkdir -p $(common_build)
 	cd $(common_build) && \
-	$(ROCKET_DIR)/riscv-tools/riscv-fesvr/configure \
-		--host=arm-xilinx-linux-gnueabi && \
+	$(common)/riscv-fesvr/configure \
+		--host=arm-linux-gnueabihf && \
 	make libfesvr.so
 
 $(common_build)/$(fesvr-main): $(fesvr-lib) $(fesvr-srcs) $(fesvr-hdrs)
@@ -286,30 +287,40 @@ $(common_build)/$(fesvr-main): $(fesvr-lib) $(fesvr-srcs) $(fesvr-hdrs)
 
 fesvr-zynq: $(common_build)/$(fesvr-main)
 
+
+$(pk):
+	mkdir -p $(common_build)
+	cd $(common_build) && \
+	$(common)/riscv-pk/configure \
+		  --host=riscv64-unknown-elf && \
+	make
+
+proxy-kernel: $(pk)
+
 # Fetch pre-built risc-v linux binary and root fs from S3
 # ------------------------------------------------------------------------------
 
-riscv_root_bin = $(s3_url)/root.bin
-ifeq ($(BOARD), zybo)
-	riscv_vmlinux = $(s3_url)/vmlinux_nofpu
-else
-	riscv_vmlinux = $(s3_url)/vmlinux
-endif
-sd_riscv = fpga-images-$(BOARD)/riscv
-sd_riscv_scratch = $(output_delivery)/riscv
-
-fetch-riscv-linux:
-	mkdir -p $(sd_riscv)
-	curl $(riscv_root_bin) > $(sd_riscv)/root.bin
-	curl $(riscv_vmlinux) > $(sd_riscv)/vmlinux
-
-fetch-riscv-linux-deliver:
-	mkdir -p $(sd_riscv_scratch)
-	curl $(riscv_root_bin) > $(sd_riscv_scratch)/root.bin
-	curl $(riscv_vmlinux) > $(sd_riscv_scratch)/vmlinux
+#riscv_root_bin = $(s3_url)/root.bin
+#ifeq ($(BOARD), zybo)
+#	riscv_vmlinux = $(s3_url)/vmlinux_nofpu
+#else
+#	riscv_vmlinux = $(s3_url)/vmlinux
+#endif
+#sd_riscv = fpga-images-$(BOARD)/riscv
+#sd_riscv_scratch = $(output_delivery)/riscv
+#
+#fetch-riscv-linux:
+#	mkdir -p $(sd_riscv)
+#	curl $(riscv_root_bin) > $(sd_riscv)/root.bin
+#	curl $(riscv_vmlinux) > $(sd_riscv)/vmlinux
+#
+#fetch-riscv-linux-deliver:
+#	mkdir -p $(sd_riscv_scratch)
+#	curl $(riscv_root_bin) > $(sd_riscv_scratch)/root.bin
+#	curl $(riscv_vmlinux) > $(sd_riscv_scratch)/vmlinux
 
 clean:
 	rm -f *.log *.jou *.str
 	rm -rf csrc simv-* output ucli.key vc_hdrs.h DVEfiles
 
-.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean
+.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel

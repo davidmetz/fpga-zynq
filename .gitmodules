@@ -3,26 +3,15 @@
 	url = https://github.com/ucb-bar/fpga-images-zedboard.git
 [submodule "zc706/fpga-images-zc706"]
 	path = zc706/fpga-images-zc706
-	url = https://github.com/ucb-bar/fpga-images-zc706.git
-[submodule "testchipip"]
-	path = testchipip
-	url = https://github.com/ucb-bar/testchipip.git
-[submodule "boom-template"]
-	path = boom-template
-	url = https://github.com/riscv-boom/boom-template.git
-[submodule "sw/buildroot"]
-	path = sw/buildroot
-	url = https://github.com/sifive/buildroot.git
-[submodule "sw/linux"]
-	path = sw/linux
-	url = https://github.com/riscv/riscv-linux.git
-[submodule "sw/riscv-pk"]
-	path = sw/riscv-pk
-	url = https://github.com/riscv/riscv-pk.git
+	url = https://github.com/davidmetz/fpga-images-zc706.git
+	branch = DNB
 [submodule "common/u-boot-xlnx"]
 	path = common/u-boot-xlnx
 	url = https://github.com/Xilinx/u-boot-xlnx.git
 	branch = master-next
-[submodule "zc706/common/linux-xlnx"]
-	path = zc706/common/linux-xlnx
-	url = https://github.com/Xilinx/linux-xlnx.git
+[submodule "common/riscv-fesvr"]
+	path = common/riscv-fesvr
+	url = https://github.com/riscv/riscv-fesvr.git
+[submodule "common/riscv-pk"]
+	path = common/riscv-pk
+	url = https://github.com/davidmetz/riscv-pk.git
