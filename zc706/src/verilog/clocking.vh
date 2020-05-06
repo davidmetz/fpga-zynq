@@ -25,7 +25,7 @@ hw/src/constrs/pin_constraints.xdc
 
 `define ZYNQ_CLK_PERIOD  5.0
 
-`define RC_CLK_MULT      8.0
+`define RC_CLK_MULT      4.0
 
 `define RC_CLK_DIVIDE   16.0
 
