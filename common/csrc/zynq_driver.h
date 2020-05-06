@@ -7,10 +7,10 @@
 
 class zynq_driver_t {
   public:
-    zynq_driver_t(tsi_t *tsi, BlockDevice *bdev);
+    zynq_driver_t(tsi_t *tsi, BlockDevice *bdev, int fan_speed=0);
     ~zynq_driver_t();
 
-    void poll(void);
+    int poll(void);
 
   private:
     uint8_t *dev;

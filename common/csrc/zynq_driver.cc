@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
+#include <stdio.h>
 
 #define ZYNQ_BASE_PADDR 0x43C00000L
 
@@ -31,7 +32,10 @@
 #define BLKDEV_DATA_NWORDS 3
 #define NET_FLIT_NWORDS 3
 
-zynq_driver_t::zynq_driver_t(tsi_t *tsi, BlockDevice *bdev)
+#define FAN_SPEED 0x40
+#define FAN_RPM 0x44
+
+zynq_driver_t::zynq_driver_t(tsi_t *tsi, BlockDevice *bdev, int fan_speed)
 {
     this->tsi = tsi;
     this->bdev = bdev;
@@ -46,6 +50,12 @@ zynq_driver_t::zynq_driver_t(tsi_t *tsi, BlockDevice *bdev)
     // reset the target
     write(SYSTEM_RESET, 1);
     write(SYSTEM_RESET, 0);
+
+//    printf("current fan speed: %d\n", read(FAN_SPEED));
+    assert(fan_speed>=0 && fan_speed <1024);
+    write(FAN_SPEED, fan_speed);
+//    printf("new fan speed: %d\n", read(FAN_SPEED));
+
 
     // set nsectors and max_request_length
     if (bdev == NULL) {
@@ -109,7 +119,7 @@ void zynq_driver_t::write_blkdev_response(struct blkdev_data &resp)
     write(BLKDEV_RESP_FIFO_DATA, resp.data >> 32);
 }
 
-void zynq_driver_t::poll(void)
+int zynq_driver_t::poll(void)
 {
     if (tsi != NULL) {
         while (read(TSI_OUT_FIFO_COUNT) > 0) {
@@ -143,4 +153,6 @@ void zynq_driver_t::poll(void)
 
         bdev->switch_to_host();
     }
+
+    return read(FAN_RPM);
 }
