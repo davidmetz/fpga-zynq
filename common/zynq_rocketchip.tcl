@@ -155,6 +155,18 @@ set obj [get_runs synth_1]
 set_property "needs_refresh" "1" $obj
 set_property "part" "PART_NUMBER_HERE" $obj
 
+# Create 'synth_size' run (if not found)
+if {[string equal [get_runs -quiet synth_size] ""]} {
+  create_run -name synth_size -part PART_NUMBER_HERE -flow {Vivado Synthesis 2015} -strategy "Vivado Synthesis Defaults" -constrset constrs_1
+} else {
+  set_property strategy "Vivado Synthesis Defaults" [get_runs synth_size]
+  set_property flow "Vivado Synthesis 2015" [get_runs synth_size]
+}
+set obj [get_runs synth_size]
+set_property "needs_refresh" "1" $obj
+set_property "part" "PART_NUMBER_HERE" $obj
+set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY none $obj
+
 # Create 'impl_1' run (if not found)
 if {[string equal [get_runs -quiet impl_1] ""]} {
   create_run -name impl_1 -part PART_NUMBER_HERE -flow {Vivado Implementation 2015} -strategy "Vivado Implementation Defaults" -constrset constrs_1 -parent_run synth_1

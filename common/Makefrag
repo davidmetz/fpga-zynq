@@ -86,6 +86,10 @@ src/tcl/make_bitstream_$(CONFIG).tcl: $(common)/make_bitstream.tcl
 	sed 's/BOARD_NAME_HERE/$(BOARD)/g;s/CHISEL_CONFIG_HERE/$(CONFIG)/g' \
 		$(common)/make_bitstream.tcl > src/tcl/make_bitstream_$(CONFIG).tcl
 
+src/tcl/make_size_stats_$(CONFIG).tcl: $(common)/make_size_stats.tcl
+	sed 's/BOARD_NAME_HERE/$(BOARD)/g;s/CHISEL_CONFIG_HERE/$(CONFIG)/g' \
+		$(common)/make_size_stats.tcl > src/tcl/make_size_stats_$(CONFIG).tcl
+
 src/verilog/%.v: $(ROCKET_DIR)/vsrc/%.v
 	cp $< $@
 
@@ -144,6 +148,8 @@ $(project): src/tcl/$(proj_name).tcl | $(verilog_srcs)
 
 project: $(project)
 
+verilog: $(verilog_srcs)
+
 vivado: $(project)
 	vivado $(project) &
 
@@ -166,6 +172,10 @@ boot-bin: $(bitstream)
 	cp fpga-images-$(BOARD)/boot_image/u-boot.elf $(proj_name)/deliver_output/
 	cd $(proj_name)/deliver_output/;bootgen -image output.bif -arch zynq -o BOOT.bin
 
+size-stats = $(proj_name)/$(proj_name)_size.txt
+$(size-stats): src/tcl/make_size_stats_$(CONFIG).tcl | $(project)
+	vivado -mode tcl -source src/tcl/make_size_stats_$(CONFIG).tcl
+size-stats: $(size-stats)
 
 
 # Platform software generation
@@ -269,11 +279,12 @@ fesvr-lib = $(common_build)/libfesvr.so
 pk = $(common_build)/pk
 
 CXX_FPGA      = arm-linux-gnueabihf-g++
-CXXFLAGS_FPGA = -O2 -std=c++11 -Wall -L$(common_build) -lfesvr \
-                -Wl,-rpath,/usr/local/lib \
+# fesvr-zynq is linked statically because the glibc version used by the compiler is too new for the arm linux used
+CXXFLAGS_FPGA = -O2 -std=c++11 -Wall -L$(common_build) \
+		elfloader.o htif.o memif.o dtm.o syscall.o device.o rfb.o context.o htif_pthread.o htif_hexwriter.o dummy.o option_parser.o term.o tsi.o  -lpthread  \
 		-I $(common)/csrc -I $(testchipip)/csrc \
 		-I $(common)/riscv-fesvr/ \
-		-Wl,-rpath,/usr/local/lib \
+		-static \
 
 $(fesvr-lib):
 	mkdir -p $(common_build)
@@ -283,6 +294,7 @@ $(fesvr-lib):
 	make libfesvr.so
 
 $(common_build)/$(fesvr-main): $(fesvr-lib) $(fesvr-srcs) $(fesvr-hdrs)
+	cd $(common_build) && \
 	$(CXX_FPGA) $(CXXFLAGS_FPGA) -o $(common_build)/$(fesvr-main) $(fesvr-srcs)
 
 fesvr-zynq: $(common_build)/$(fesvr-main)
@@ -323,4 +335,7 @@ clean:
 	rm -f *.log *.jou *.str
 	rm -rf csrc simv-* output ucli.key vc_hdrs.h DVEfiles
 
-.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel
+transfer: $(bitstream)
+	scp $(proj_name)/deliver_output/rocketchip_wrapper.bit  root@192.168.1.5:~/$(CONFIG).bit
+
+.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel verilog size-stats

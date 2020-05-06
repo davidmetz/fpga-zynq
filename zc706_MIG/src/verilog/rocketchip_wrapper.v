@@ -39,6 +39,7 @@ module rocketchip_wrapper
     FIXED_IO_ps_porb,
     FIXED_IO_ps_srstb,
     SM_FAN_PWM,
+    SM_FAN_TACH,
 `ifndef differential_clock
     clk);
 `else
@@ -85,6 +86,7 @@ module rocketchip_wrapper
   output DDR3_SODIMM_reset_n;
   output DDR3_SODIMM_we_n;
   output SM_FAN_PWM;
+  input SM_FAN_TACH;
 
 `ifndef differential_clock
   input clk;
@@ -168,6 +170,8 @@ module rocketchip_wrapper
   wire reset, reset_cpu;
   wire host_clk;
   wire gclk_i, gclk_fbout, host_clk_i, mmcm_locked;
+  wire [9:0] fan_speed;
+  wire [15:0] fan_rpm;
 
   system system_i
        (.DDR_addr(DDR_addr),
@@ -387,7 +391,10 @@ module rocketchip_wrapper
    .io_mem_axi_0_r_bits_resp (S_AXI_rresp),
    .io_mem_axi_0_r_bits_id (S_AXI_rid),
    .io_mem_axi_0_r_bits_data (S_AXI_rdata),
-   .io_mem_axi_0_r_bits_last (S_AXI_rlast)
+   .io_mem_axi_0_r_bits_last (S_AXI_rlast),
+
+   .io_fan_speed (fan_speed),
+   .io_fan_rpm (fan_rpm)
   );
 `ifndef differential_clock
   IBUFG ibufg_gclk (.I(clk), .O(gclk_i));
@@ -447,22 +454,43 @@ module rocketchip_wrapper
     .CLKFBIN(gclk_fbout));
 
   reg fan_pwm_state;
-  reg [9:0] pwm_counter;
   // host_clk = 50MHz => 50MHz/1024 = ~50KHz pwm frequency
+  reg [9:0] pwm_counter;
+  reg tacho_prev;
+  reg [15:0] second_counter;
+  reg [15:0] rpm_counter;
+  reg [15:0] rpm;
 
   assign SM_FAN_PWM = fan_pwm_state;
+  assign fan_rpm = rpm;
 
   always @ (posedge host_clk, posedge reset) begin
     if(reset) begin
         fan_pwm_state <= 1'd0;
         pwm_counter <= 10'd0;
+
+        second_counter <= 16'd0;
+        rpm_counter <= 16'd0;
+        rpm <= 16'd0;
+        tacho_prev <= 1'd0;
     end else begin
         pwm_counter <= pwm_counter+10'd1;
         if(pwm_counter == 10'd0) begin
+            second_counter <= second_counter+10'd1;
             fan_pwm_state <= 1'd1;
-        // ~70% duty cycle
-        end else if(pwm_counter == 10'd700) begin
+        end
+        // not else if in order to allow speed 0
+        if(pwm_counter == fan_speed) begin
             fan_pwm_state <= 1'd0;
+        end
+        tacho_prev <= SM_FAN_TACH;
+        if(SM_FAN_TACH && !tacho_prev) begin
+            rpm_counter <= rpm_counter + 16'd1;
+        end
+        if(second_counter == 16'd48828) begin
+            second_counter <= 16'd0;
+            rpm <= rpm_counter;
+            rpm_counter <= 16'd0;
         end
     end
   end

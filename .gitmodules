@@ -15,3 +15,6 @@
 [submodule "common/riscv-pk"]
 	path = common/riscv-pk
 	url = https://github.com/davidmetz/riscv-pk.git
+[submodule "testchipip"]
+	path = testchipip
+	url = https://github.com/ucb-bar/testchipip.git
