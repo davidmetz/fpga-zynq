@@ -11,7 +11,7 @@
 	branch = master-next
 [submodule "common/riscv-fesvr"]
 	path = common/riscv-fesvr
-	url = https://github.com/riscv/riscv-fesvr.git
+	url = https://github.com/davidmetz/riscv-fesvr.git
 [submodule "common/riscv-pk"]
 	path = common/riscv-pk
 	url = https://github.com/davidmetz/riscv-pk.git

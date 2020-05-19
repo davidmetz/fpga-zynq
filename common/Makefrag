@@ -173,9 +173,12 @@ boot-bin: $(bitstream)
 	cd $(proj_name)/deliver_output/;bootgen -image output.bif -arch zynq -o BOOT.bin
 
 size-stats = $(proj_name)/$(proj_name)_size.txt
-$(size-stats): src/tcl/make_size_stats_$(CONFIG).tcl | $(project)
+$(size-stats): src/tcl/make_size_stats_$(CONFIG).tcl $(verilog_srcs) | $(project)
 	vivado -mode tcl -source src/tcl/make_size_stats_$(CONFIG).tcl
 size-stats: $(size-stats)
+
+license-test:
+	~/Xilinx/Vivado/2018.2/bin/unwrapped/lnx64.o/lmutil lmstat -a
 
 
 # Platform software generation
@@ -338,4 +341,4 @@ clean:
 transfer: $(bitstream)
 	scp $(proj_name)/deliver_output/rocketchip_wrapper.bit  root@192.168.1.5:~/$(CONFIG).bit
 
-.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel verilog size-stats
+.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel verilog size-stats license-test
