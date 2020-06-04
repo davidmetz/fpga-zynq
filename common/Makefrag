@@ -14,7 +14,7 @@ common_build = $(common)/build
 testchipip = $(base_dir)/testchipip
 output_delivery = deliver_output
 SHELL := /bin/bash
-chipyard_dir := ~/git/chipyard
+chipyard_dir := ~/git/chipyard-dev
 vivado_dir := ~/Xilinx/Vivado/2018.2/bin
 long_name = $(TOP_MODULE_PROJECT).$(TOP_MODULE).$(CONFIG)
 gen_dir=$(chipyard_dir)/sims/verilator/generated-src
@@ -89,6 +89,14 @@ src/tcl/make_bitstream_$(CONFIG).tcl: $(common)/make_bitstream.tcl
 src/tcl/make_size_stats_$(CONFIG).tcl: $(common)/make_size_stats.tcl
 	sed 's/BOARD_NAME_HERE/$(BOARD)/g;s/CHISEL_CONFIG_HERE/$(CONFIG)/g' \
 		$(common)/make_size_stats.tcl > src/tcl/make_size_stats_$(CONFIG).tcl
+
+src/tcl/make_timing_stats_$(CONFIG).tcl: $(common)/make_timing_stats.tcl
+	sed 's/BOARD_NAME_HERE/$(BOARD)/g;s/CHISEL_CONFIG_HERE/$(CONFIG)/g' \
+		$(common)/make_timing_stats.tcl > src/tcl/make_timing_stats_$(CONFIG).tcl
+
+src/tcl/make_timing_impl_stats_$(CONFIG).tcl: $(common)/make_timing_impl_stats.tcl
+	sed 's/BOARD_NAME_HERE/$(BOARD)/g;s/CHISEL_CONFIG_HERE/$(CONFIG)/g' \
+		$(common)/make_timing_impl_stats.tcl > src/tcl/make_timing_impl_stats_$(CONFIG).tcl
 
 src/verilog/%.v: $(ROCKET_DIR)/vsrc/%.v
 	cp $< $@
@@ -176,6 +184,19 @@ size-stats = $(proj_name)/$(proj_name)_size.txt
 $(size-stats): src/tcl/make_size_stats_$(CONFIG).tcl $(verilog_srcs) | $(project)
 	vivado -mode tcl -source src/tcl/make_size_stats_$(CONFIG).tcl
 size-stats: $(size-stats)
+
+timing-stats = $(proj_name)/$(proj_name)_timing.txt
+$(timing-stats): src/tcl/make_timing_stats_$(CONFIG).tcl $(verilog_srcs) $(size-stats)| $(project)
+	vivado -mode tcl -source src/tcl/make_timing_stats_$(CONFIG).tcl
+timing-stats: $(timing-stats)
+
+
+timing-impl-stats = $(proj_name)/$(proj_name)_timing_impl.txt
+$(timing-impl-stats): src/tcl/make_timing_impl_stats_$(CONFIG).tcl
+	vivado -mode tcl -source src/tcl/make_timing_impl_stats_$(CONFIG).tcl
+timing-impl-stats: $(timing-impl-stats)
+
+
 
 license-test:
 	~/Xilinx/Vivado/2018.2/bin/unwrapped/lnx64.o/lmutil lmstat -a
@@ -341,4 +362,4 @@ clean:
 transfer: $(bitstream)
 	scp $(proj_name)/deliver_output/rocketchip_wrapper.bit  root@192.168.1.5:~/$(CONFIG).bit
 
-.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel verilog size-stats license-test
+.PHONY: vivado project init-submodules rocket fesvr-zynq fetch-images load-sd ramdisk-open ramdisk-close clean proxy-kernel verilog size-stats license-test timing-impl-stats
